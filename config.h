@@ -1,10 +1,7 @@
-// #include "TZ.h"
-
-// #define MYTZ TZ_Europe_Atena
+#define debug_mode
 
 // Wifi config
 const char *wifi_ssid            = "ssid";
-const char *wifi_bssid           = "bssid";
 const char *wifi_password        = "password";
 const char *mqtt_host1           = "host1";
 const char *mqtt_host2           = "host2";
