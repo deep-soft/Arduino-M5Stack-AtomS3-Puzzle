@@ -65,16 +65,13 @@ int  maxDisplacement;
 //   NEO_GRBW    Pixels are wired for GRBW bitstream (RGB+W NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 
-
-// Example for NeoPixel Shield.  In this application we'd like to use it
-// as a 5x8 tall matrix, with the USB port positioned at the top of the
-// Arduino.  When held that way, the first pixel is at the top right, and
-// lines are arranged in columns, progressive order.  The shield uses
-// 800 KHz (v2) pixels that expect GRB color data.
+// Example for M5Stack 2 x Puzzle Unit (WS2812E).
 
 Adafruit_NeoPixel  button_led(1, BTNLED_PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(16, 8, 
-  MATRIX_PIN,
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
+  16,         // width  = 2 x 8
+  8,          // height = 1 x 8
+  MATRIX_PIN, // grove pin 2
   NEO_MATRIX_TOP + NEO_MATRIX_RIGHT + NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
   NEO_GRB + NEO_KHZ800);
 
@@ -82,52 +79,26 @@ const uint16_t colors[] = {
   matrix.Color(255, 0, 0), matrix.Color(0, 255, 0), matrix.Color(0, 0, 255) };
 
 void matrix_setup() {
+  // initial setup
   matrix.begin();
   matrix.setTextWrap(false);
   matrix.setBrightness(40);
   matrix.setTextColor(colors[0]);
-//  the_color = "#777777";
-//  set_message_color(the_color);
 }
 
 void BLED_set(byte idx, byte red, byte green, byte blue) {
+  // button LED
   BLED_R = red;
   BLED_G = green;
   BLED_B = blue;
+  #ifdef DEBUG_MODE
   Serial.print(" R="); Serial.print(BLED_R);
   Serial.print(" G="); Serial.print(BLED_G);
   Serial.print(" B="); Serial.print(BLED_B);
   Serial.println();
+  #endif DEBUG_MODE
   button_led.setPixelColor(idx, button_led.Color(BLED_R, BLED_G, BLED_B));
   button_led.show();
-}
-
-#define PTM(w) \
-  Serial.print(" " #w "="); \
-  Serial.print(tm->tm_##w);
-
-void printTm(const char* what, const tm* tm) {
-  Serial.print(what);
-  PTM(isdst);
-  PTM(yday);
-  PTM(wday);
-  PTM(year);
-  PTM(mon);
-  PTM(mday);
-  PTM(hour);
-  PTM(min);
-  PTM(sec);
-}
-
-void showTime_old() {
-  gettimeofday(&tv, nullptr);
-  clock_gettime(0, &tp);
-  now = time(nullptr);
-  Serial.println();
-  printTm("localtime:", localtime(&now));
-  Serial.println();
-  printTm("gmtime:   ", gmtime(&now));
-  Serial.println();
 }
 
 void print_GMT_Time() {
@@ -137,17 +108,14 @@ void print_GMT_Time() {
   if (getLocalTime(&timeinfo)) {
     timeNow = time(NULL);
     timeElements = gmtime(&timeNow);
-    //Serial.println(isotime(timeElements));
-    Serial.print("GMT: ");
-    Serial.println(timeElements, "%Y-%m-%d %H:%M:%S");  // Serial port output date and time.  
+    Serial.print("GMT: "); Serial.println(timeElements, "%Y-%m-%d %H:%M:%S");  // Serial port output date and time.  
   }
 }
 
 void print_LOC_Time() {
   struct tm timeinfo;
   if (getLocalTime(&timeinfo)) {
-    Serial.print("LOC: ");
-    Serial.println(&timeinfo, "%Y-%m-%d %H:%M:%S");  // Serial port output date and time.  
+    Serial.print("LOC: "); Serial.println(&timeinfo, "%Y-%m-%d %H:%M:%S");  // Serial port output date and time.  
   }
 }
 
@@ -162,15 +130,19 @@ void showTime() {
 }
 
 void every_minute() {
+  // show time every minute on serial
   unsigned int OLD_BLED_R, OLD_BLED_G, OLD_BLED_B;
   now = time(nullptr);
   if (localtime(&now) -> tm_sec == 0) {
+    // save button LED color
     OLD_BLED_R = BLED_R;
     OLD_BLED_G = BLED_G;
     OLD_BLED_B = BLED_B;
+    // set button LED color
     BLED_set(0, 10, 0, 0);
     showTime();
     delay(1000);
+    // restore button LED color
     BLED_set(0, OLD_BLED_R, OLD_BLED_G, OLD_BLED_B);
   }
 }
@@ -183,8 +155,6 @@ void setup() {
   // Wifi
   WiFi.mode(WIFI_MODE_STA);
   WiFi.begin(wifi_ssid, wifi_password);
-  //WiFi.begin(wifi_ssid, wifi_password, 0, wifi_bssid);
-  // WiFi.BSSIDstr(i).c_str()
   WiFi.setSleep(false);
   int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
@@ -227,8 +197,7 @@ void setup() {
 
   BLED_set(0, 0, 0, 10);
 
-  Serial.print("Subscribe : topic=");
-  Serial.println(mqtt_subscribe_topic);
+  Serial.print("Subscribe : topic="); Serial.println(mqtt_subscribe_topic);
   mqtt_client.subscribe(mqtt_subscribe_topic);
 
   delay(1000);
@@ -241,8 +210,6 @@ void setup() {
   settimeofday(&tv, nullptr);
 
   // configTime
-//  configTime(config_time_hours * 3600, 0, config_time_server1);
-//  configTime(MYTZ, config_time_server1);
   configTime(gmtOffset_sec, daylightOffset_sec, config_time_server1);
   delay(1000);
   struct tm t;
@@ -250,9 +217,9 @@ void setup() {
   if (!getLocalTime(&t)) {
     Serial.println("getLocalTime() failed...");
     delay(1000);
-//    count++;
-//    if (count > 5) break;
-    //reboot();
+    //  count++;
+    //  if (count > 5) break;
+    //  reboot();
   }
   showTime();
   delay(1000);
@@ -277,12 +244,10 @@ void reboot() {
     button_led.setPixelColor(0, button_led.Color(0, 0, 0));
     delay(100);
   }
-
   ESP.restart();
 }
 
 int x    = matrix.width();
-int pass = 0;
 
 void matrix_loop() {
   matrix.fillScreen(0);
@@ -290,23 +255,6 @@ void matrix_loop() {
   matrix.print(the_message);
   if (--x < -maxDisplacement) {
     x = matrix.width();
-  }
-//  if(--x < -64) {  
-//    x = matrix.width();
-//    matrix.setTextColor(matrix.Color(MLED_R, MLED_G, MLED_B));
-//  }
-  matrix.show();
-  delay(100);
-}
-
-void matrix_loop_old() {
-  matrix.fillScreen(0);
-  matrix.setCursor(x, 0);
-  matrix.print(the_message);
-  if(--x < -36) {
-    x = matrix.width();
-    if(++pass >= 3) pass = 0;
-    matrix.setTextColor(colors[pass]);
   }
   matrix.show();
   delay(100);
@@ -346,10 +294,12 @@ void mqtt_sub_callback(char* topic, byte* payload, unsigned int length) {
   maxDisplacement = the_message.length() * pixelPerChar + matrix.width();
   
   showTime();
+  #ifdef DEBUG_MODE  
   Serial.print("str     :"); Serial.println(payload_str);
   Serial.print("length  :"); Serial.println(length);
   Serial.print("min_len :"); Serial.println(min_len);
   Serial.print("k       :"); Serial.println(k);
+  #endif DEBUG_MODE
   Serial.print("msg     :"); Serial.println(the_message);
   Serial.print("clr     :"); Serial.println(the_color);
 
