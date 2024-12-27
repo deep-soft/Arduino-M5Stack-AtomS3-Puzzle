@@ -1,4 +1,11 @@
 // mqtt-atoms3lite-neomatrix.ino
+// v1.1
+// mosquitto_pub -h mqtt_host -p mqtt_port -i mqtt_client_id -u mqtt_username -P mqtt_password -t mqtt_subscribe_topic -m "Scrolling text on M5Stack AtomS3 lite with puzzle unit,#AA7733/10"
+// published message to split in 3 parts:
+// 1 - the message (from first char to {,} )
+// 2 - the color   (from {,} to  {/}       )
+// 3 - the speed   (from {/} to last char  )
+// note: 2nd and 3rd part are optional
 
 #include <M5Unified.h>
 
@@ -42,8 +49,11 @@ int MLED_B = 0;
 
 String the_message;
 String the_color;
+String speed_str;
+int  the_speed;
 int  pixelPerChar = 6;
 int  maxDisplacement;
+bool running = false;
 
 // MATRIX DECLARATION:
 // Parameter 1 = width of NeoPixel matrix
@@ -76,13 +86,13 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
   NEO_GRB + NEO_KHZ800);
 
 const uint16_t colors[] = {
-  matrix.Color(255, 0, 0), matrix.Color(0, 255, 0), matrix.Color(0, 0, 255) };
+  matrix.Color(255, 0, 0), matrix.Color(0, 255, 0), matrix.Color(0, 0, 255), matrix.Color(0, 0, 0) };
 
 void matrix_setup() {
   // initial setup
   matrix.begin();
   matrix.setTextWrap(false);
-  matrix.setBrightness(40);
+  matrix.setBrightness(20);
   matrix.setTextColor(colors[0]);
 }
 
@@ -231,6 +241,7 @@ void setup() {
   delay(1000);
 
   the_message = "Hello!";
+  the_speed   = 50;
   maxDisplacement = the_message.length() * pixelPerChar + matrix.width();
 
   matrix_setup();
@@ -247,9 +258,12 @@ void reboot() {
   ESP.restart();
 }
 
-int x    = matrix.width();
+int x  = matrix.width();
 
 void matrix_loop() {
+  if (running = false) {
+   exit;
+  }
   matrix.fillScreen(0);
   matrix.setCursor(x, 0);
   matrix.print(the_message);
@@ -257,7 +271,7 @@ void matrix_loop() {
     x = matrix.width();
   }
   matrix.show();
-  delay(100);
+  delay(the_speed);
 }
 
 void loop() {
@@ -286,10 +300,22 @@ void mqtt_sub_callback(char* topic, byte* payload, unsigned int length) {
   payload_str = String(buf);
 
   int k;
+  int s;
   k = payload_str.indexOf(',');
-  the_message = payload_str.substring(0, k);
-  the_color   = payload_str.substring(k+1, min_len);
-  set_message_color(the_color);
+  s = payload_str.indexOf('/');
+  if (k > 0) {
+    the_message = payload_str.substring(0, k);
+    if (s > 0) {
+      the_color   = payload_str.substring(k+1, s);
+      speed_str   = payload_str.substring(s+1, min_len);
+    }
+    else {
+      the_color   = payload_str.substring(k+1, min_len);
+      speed_str   = "100";
+    }
+    set_message_color(the_color);
+    set_message_speed(speed_str);
+  }
   
   maxDisplacement = the_message.length() * pixelPerChar + matrix.width();
   
@@ -302,10 +328,10 @@ void mqtt_sub_callback(char* topic, byte* payload, unsigned int length) {
   #endif DEBUG_MODE
   Serial.print("msg     :"); Serial.println(the_message);
   Serial.print("clr     :"); Serial.println(the_color);
+  Serial.print("spd     :"); Serial.println(speed_str);
 
   matrix.show();
 }
-
 
 void set_message_color(String &color_str) {
   if (color_str.length() != 7) return;
@@ -327,4 +353,15 @@ void set_message_color(String &color_str) {
   MLED_B = b;
 
   matrix.setTextColor(matrix.Color(MLED_R, MLED_G, MLED_B));
+}
+
+void set_message_speed(String &speed_str) {
+  the_speed = abs(speed_str.toInt());
+  if (the_speed == 0) {
+    running = false;
+    matrix.setTextColor(colors[3]);
+  }
+  else {
+    running = true;
+  }
 }
