@@ -42,8 +42,8 @@ int MLED_B = 0;
 
 String the_message;
 String the_color;
-unsigned int the_message_len;
-unsigned int the_message_len_x;
+int  pixelPerChar = 6;
+int  maxDisplacement;
 
 // MATRIX DECLARATION:
 // Parameter 1 = width of NeoPixel matrix
@@ -86,8 +86,8 @@ void matrix_setup() {
   matrix.setTextWrap(false);
   matrix.setBrightness(40);
   matrix.setTextColor(colors[0]);
-  the_color = "#777777";
-  set_message_color(the_color);
+//  the_color = "#777777";
+//  set_message_color(the_color);
 }
 
 void BLED_set(byte idx, byte red, byte green, byte blue) {
@@ -264,6 +264,7 @@ void setup() {
   delay(1000);
 
   the_message = "Hello!";
+  maxDisplacement = the_message.length() * pixelPerChar + matrix.width();
 
   matrix_setup();
 }
@@ -287,10 +288,13 @@ void matrix_loop() {
   matrix.fillScreen(0);
   matrix.setCursor(x, 0);
   matrix.print(the_message);
-  if(--x < -64) {  
+  if (--x < -maxDisplacement) {
     x = matrix.width();
-    matrix.setTextColor(matrix.Color(MLED_R, MLED_G, MLED_B));
   }
+//  if(--x < -64) {  
+//    x = matrix.width();
+//    matrix.setTextColor(matrix.Color(MLED_R, MLED_G, MLED_B));
+//  }
   matrix.show();
   delay(100);
 }
@@ -336,18 +340,17 @@ void mqtt_sub_callback(char* topic, byte* payload, unsigned int length) {
   int k;
   k = payload_str.indexOf(',');
   the_message = payload_str.substring(0, k);
-  the_message_len = the_message.length();
-  the_message_len_x = (2 * the_message_len);
   the_color   = payload_str.substring(k+1, min_len);
   set_message_color(the_color);
-
+  
+  maxDisplacement = the_message.length() * pixelPerChar + matrix.width();
+  
   showTime();
   Serial.print("str     :"); Serial.println(payload_str);
   Serial.print("length  :"); Serial.println(length);
   Serial.print("min_len :"); Serial.println(min_len);
   Serial.print("k       :"); Serial.println(k);
   Serial.print("msg     :"); Serial.println(the_message);
-  Serial.print("msg_x   :"); Serial.println(the_message_len_x);
   Serial.print("clr     :"); Serial.println(the_color);
 
   matrix.show();
@@ -372,4 +375,6 @@ void set_message_color(String &color_str) {
   MLED_R = r;
   MLED_G = g;
   MLED_B = b;
+
+  matrix.setTextColor(matrix.Color(MLED_R, MLED_G, MLED_B));
 }
