@@ -1,5 +1,6 @@
 # M5Stack AtomS3 lite - WLED configuration for platformio
-<code>
+# 
+```sh
 cd $HOME
 mkdir WLED
 cd WLED
@@ -9,18 +10,23 @@ source platformio/bin/activate
 pip3 install platformio
 git clone https://github.com/Aircoookie/WLED.git
 cd WLED/
-</code>
+```
+
 </br>
 // edit platformio.ini</br>
 // comment out line 13 with all the different envs (chips) as # default_envs = nodemcuv2, esp8266_2m, esp01_1m_full, ....</br>
+</br>
 // add other line:
-<code>
+
+```sh
 default_envs = m5stack-atoms3lite
-</code>
+```
+
 </br>
 // create file platformio_override.ini</br>
 // with following lines:
-<code>
+
+```sh
 [platformio]
 default_envs = m5stack-atoms3lite
 
@@ -41,11 +47,13 @@ build_flags = ${env:m5stack-atoms3.build_flags} ${common.debug_flags}
    -D WLED_DISABLE_LOXONE
 ; enable optional built-in features
    -D WLED_ENABLE_PIXART
-</code>
+```
 <br>
-// change '"ssid"' and '"ssid_password"' or comment those lines
-<code>
+// change '"ssid"' and '"ssid_password"' or comment those lines</br>
+
+```sh
 pio pkg install
 pio run
-</code>
+```
+
 // firmware will be in ~/WLED/build_output/firmware/
