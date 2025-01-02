@@ -24,7 +24,8 @@ default_envs = m5stack-atoms3lite
 
 </br>
 // create file platformio_override.ini</br>
-// with following lines:
+// with following lines:</br>
+// (change '"ssid"' and '"ssid_password"' or comment those lines)</br>
 
 ```sh
 [platformio]
@@ -37,7 +38,6 @@ build_flags = ${env:m5stack-atoms3.build_flags} ${common.debug_flags}
    -D DATA_PINS=2
    -D LEDPIN=35
    -D BTNPIN=41
-   -D IRPIN=4
 ; Configure default WiFi
    -D CLIENT_SSID='"ssid"'
    -D CLIENT_PASS='"ssid_password"'
@@ -48,9 +48,10 @@ build_flags = ${env:m5stack-atoms3.build_flags} ${common.debug_flags}
 ; enable optional built-in features
    -D WLED_ENABLE_PIXART
 ```
-<br>
-// change '"ssid"' and '"ssid_password"' or comment those lines</br>
 
+</br>
+
+// build firmware
 ```sh
 pio pkg install
 pio run
